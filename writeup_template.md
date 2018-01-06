@@ -1,5 +1,4 @@
 ## Writeup Template
-### You can use this file as a template for your writeup if you want to submit it as a markdown file, but feel free to use some other method and submit a pdf if you prefer.
 
 ---
 
@@ -27,76 +26,71 @@ The goals / steps of this project are the following:
 ## [Rubric](https://review.udacity.com/#!/rubrics/513/view) Points
 ### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
 
----
-### Writeup / README
-
-#### 1. Provide a Writeup / README that includes all the rubric points and how you addressed each one.  You can submit your writeup as markdown or pdf.  [Here](https://github.com/udacity/CarND-Vehicle-Detection/blob/master/writeup_template.md) is a template writeup for this project you can use as a guide and a starting point.  
-
-You're reading it!
-
 ### Histogram of Oriented Gradients (HOG)
 
 #### 1. Explain how (and identify where in your code) you extracted HOG features from the training images.
 
-The code for this step is contained in the first code cell of the IPython notebook (or in lines # through # of the file called `some_file.py`).  
+The dataset was broken down to two sets, car and notcar, in the beginning of the project, I used the sample images that were provided by Udacity.
 
-I started by reading in all the `vehicle` and `non-vehicle` images.  Here is an example of one of each of the `vehicle` and `non-vehicle` classes:
+I also visualized some of the images, from both the classes, that can be seen in the IPython Notebook
 
-![alt text][image1]
+Then I used the helper functions that were taught us during the lecture videos, as you can see under the hedding of "Necessary Functions for feature extraction" in the IPython Notebook.
 
-I then explored different color spaces and different `skimage.hog()` parameters (`orientations`, `pixels_per_cell`, and `cells_per_block`).  I grabbed random images from each of the two classes and displayed them to get a feel for what the `skimage.hog()` output looks like.
+I also used the color histograms technique and explored a few color spaces to extract the necessary features from the images.
 
-Here is an example using the `YCrCb` color space and HOG parameters of `orientations=8`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)`:
+I used the skimage.hog() function, and I tuned the some of the parameters namely
+> orientations - Specifies the number of gradient directions 
+> pixels_per_cell - The size of the cell over which the gradient was calculated
+> cells_per_block - area over which the histogram count is normalized
 
-
-![alt text][image2]
+I also, visualized the HOG for some of the sample images, which can be seen in the IPython Notebook
 
 #### 2. Explain how you settled on your final choice of HOG parameters.
 
-I tried various combinations of parameters and...
+There were a lot of parameters that could be tunes, I did some manual tuning on the images and finally settled for 
+
+* color_space = 'YCrCb' - YCrCb resulted in far better performance than RGB, HSV and HLS
+* orient = 9 # HOG orientations - I tried 6,9 and 12. Model performance didn't vary much
+* pix_per_cell = 16 - I tried 8 and 16 and finally chose 16 since it signficantly decreased computation time
+* cell_per_block = 1 - I tried 1 and 2. The performance difference b/w them wasn't much but 1 cell per block had significantly less no. of features and speeded up training and pipeline
+* hog_channel = 'ALL' - ALL resulted in far better performance than any other individual channel
+
+These parameters, were quick in their performance as well as accuracy, as ultimately these parameters have to be used in a video, therefor we have to keep these things in mind
+
+Also, after a lot of tuning, although there were combinations that were able to yield a better images on the test set, but on the video, they were not actually performing very well. So these were the parameters that I decided to finally choose.
+
 
 #### 3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
 
-I trained a linear SVM using...
+I followed the steps below for training the classifier
+
+1) Format features using np.vstack and StandardScaler().
+2) Split data into shuffled training and test sets
+3) Train linear SVM using sklearn.svm.LinearSVC().
+
 
 ### Sliding Window Search
 
 #### 1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
 
-I decided to search random window positions at random scales all over the image and came up with this (ok just kidding I didn't actually ;):
+As there was not a need to actually run the algorithm on the whole image, I reduced the area where the sliding window algorithm will actually run, 
+In the sliding window technique, for each window we extract features for that window, scale extracted features to be fed to the classifier, predict whether the window contains a car using our trained Linear SVM classifier and save the window if the classifier predicts there is a car in that window.
 
-![alt text][image3]
 
 #### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
-Ultimately I searched on two scales using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  Here are some example images:
+Refer to the test images, that are displayed in the IPython Notebook, under the heading "Visualization of the sliding window technique on test images"
 
-![alt text][image4]
----
 
 ### Video Implementation
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
-Here's a [link to my video result](./project_video.mp4)
+Here's a [link to my video result](./vehicle_detection.mp4)
 
 
 #### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
 I recorded the positions of positive detections in each frame of the video.  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
-
-Here's an example result showing the heatmap from a series of frames of video, the result of `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
-
-### Here are six frames and their corresponding heatmaps:
-
-![alt text][image5]
-
-### Here is the output of `scipy.ndimage.measurements.label()` on the integrated heatmap from all six frames:
-![alt text][image6]
-
-### Here the resulting bounding boxes are drawn onto the last frame in the series:
-![alt text][image7]
-
-
 
 ---
 
@@ -104,5 +98,7 @@ Here's an example result showing the heatmap from a series of frames of video, t
 
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+My approach actually, used the classic machine learning approach, which as told in the videos was nice to get a good intuition as it requires a lot of manual tuning, but what I felt was that because of the excess manual tuning, perhaps, the parameters the I selected are way too specific to this problem.
+Also when I tried to adjust so as to balance the speed of the algorithm a lot of false positives started popping up
 
+I think with the introduction of Deep Nets like YOLOnet, we can leverage the power of Deep Learning here too, to get better and quicker results. Which actually have been mention in many places
